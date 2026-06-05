@@ -1,0 +1,49 @@
+# Codemagic CI/CD Configuration for Persian PDF Translate Android App
+# For more info: https://docs.codemagic.io/yaml-basic-configuration/yaml-getting-started/
+
+workflows:
+  android-workflow:
+    name: Android Build & Test Workflow
+    max_build_duration: 60
+    instance_type: mac_mini_m1 # Standard VM instance for building Android applications
+    environment:
+      vars:
+        # Optimizing JVM options for building inside the CI containers
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m -XX:+UseParallelGC"
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+    scripts:
+      - name: Initialize Gradle Wrapper (if missing)
+        script: |
+          # The codebase doesn't store gradle wrapper binaries. We dynamically run gradle wrapper to install it.
+          if [ ! -f "gradlew" ]; then
+            echo "Installing Gradle Wrapper..."
+            gradle wrapper
+            chmod +x gradlew
+          fi
+      - name: Decrypt and Inject Environment Credentials (Optional)
+        script: |
+          # If .env is managed/stored securely in CI, configure it here:
+          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+            cp .env.example .env
+          fi
+      - name: Run Unit & Robolectric Tests
+        script: |
+          ./gradlew :app:testDebugUnitTest
+      - name: Build Android Debug APK
+        script: |
+          ./gradlew :app:assembleDebug
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
+    publishing:
+      email:
+        recipients:
+          - hnamatollahi@gmail.com
+        on_failure: true
+        on_success: true
