@@ -23,8 +23,8 @@ workflows:
         script: |
           # The codebase doesn't store gradle wrapper binaries. We dynamically run gradle wrapper to install it.
           if [ ! -f "gradlew" ]; then
-            echo "Installing Gradle Wrapper..."
-            gradle wrapper
+            echo "Installing Gradle Wrapper with version 9.3.1..."
+            gradle wrapper --gradle-version 9.3.1
             chmod +x gradlew
           fi
       - name: Decrypt and Inject Environment Credentials (Optional)

@@ -46,7 +46,9 @@ import com.example.ui.theme.*
 @Composable
 fun MainLayout(
     translationViewModel: TranslationViewModel,
-    historyViewModel: HistoryViewModel
+    historyViewModel: HistoryViewModel,
+    currentThemeMode: String,
+    onThemeChange: (String) -> Unit
 ) {
     var activeTab by remember { mutableStateOf(0) }
     var showReaderView by remember { mutableStateOf(false) }
@@ -103,8 +105,18 @@ fun MainLayout(
                         .padding(innerPadding)
                 ) {
                     when (activeTab) {
-                        0 -> TextTranslatorScreen(translationViewModel, historyViewModel)
-                        1 -> PdfDashboardScreen(translationViewModel, onOpenReader = { showReaderView = true })
+                        0 -> TextTranslatorScreen(
+                            viewModel = translationViewModel,
+                            historyViewModel = historyViewModel,
+                            currentThemeMode = currentThemeMode,
+                            onThemeChange = onThemeChange
+                        )
+                        1 -> PdfDashboardScreen(
+                            viewModel = translationViewModel,
+                            onOpenReader = { showReaderView = true },
+                            currentThemeMode = currentThemeMode,
+                            onThemeChange = onThemeChange
+                        )
                         2 -> HistoryScreen(historyViewModel, translationViewModel)
                     }
                 }
@@ -116,7 +128,9 @@ fun MainLayout(
 @Composable
 fun TextTranslatorScreen(
     viewModel: TranslationViewModel,
-    historyViewModel: HistoryViewModel
+    historyViewModel: HistoryViewModel,
+    currentThemeMode: String,
+    onThemeChange: (String) -> Unit
 ) {
     val context = LocalContext.current
     val inputText by viewModel.inputText.collectAsState()
@@ -376,13 +390,17 @@ fun TextTranslatorScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
         PersianTranslationGuide()
+        Spacer(modifier = Modifier.height(12.dp))
+        PersianAboutAppCard(currentThemeMode = currentThemeMode, onThemeChange = onThemeChange)
     }
 }
 
 @Composable
 fun PdfDashboardScreen(
     viewModel: TranslationViewModel,
-    onOpenReader: () -> Unit
+    onOpenReader: () -> Unit,
+    currentThemeMode: String,
+    onThemeChange: (String) -> Unit
 ) {
     val context = LocalContext.current
     val pdfUriState by viewModel.pdfUri.collectAsState()
@@ -578,6 +596,8 @@ fun PdfDashboardScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
         PersianTranslationGuide()
+        Spacer(modifier = Modifier.height(12.dp))
+        PersianAboutAppCard(currentThemeMode = currentThemeMode, onThemeChange = onThemeChange)
     }
 }
 
@@ -1208,6 +1228,22 @@ fun PersianTranslationGuide() {
                             title = "۳. تاریخچه اتوماتیک آفلاین و مدیریت آرشیو",
                             description = "تمام ترجمه‌های گرانبهای شما به محض اتمام به طور خودکار در آرشیو محلی تلفن همراه شما ثبت می‌شوند تا در مراجعات بعدی کاملاً رایگان، بدون اینترنت و به صورت سریع از بخش آرشیو در دسترس باشند."
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        GuideStepItem(
+                            icon = Icons.Default.Warning,
+                            title = "۴. نیاز به فیلترشکن (VPN) برای دسترسی به گوگل",
+                            description = "از آنجایی که سرورهای هوش مصنوعی شرکت گوگل (Gemini API) ایران را محدود کرده‌اند، برای ترجمه کردن متون و فایل‌های جدید حتماً باید فیلترشکن (VPN) خود را روشن کنید تا نرم‌افزار بتواند به درستی با سرور ارتباط برقرار کند."
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        GuideStepItem(
+                            icon = Icons.Default.Lock,
+                            title = "۵. عملکرد نرم‌افزار در زمان قطع اینترنت (آفلاین)",
+                            description = "در حالت آفلاین و قطع اینترنت، امکان ثبت ترجمهٔ گویای جدید وجود ندارد؛ اما نگران نباشید! شما می‌توانید به تمام فایل‌ها، اسناد و متون ترجمه‌شدهٔ قبلی خود به صورت ۱۰۰ درصد آفلاین، رایگان و بدون نیاز به هیچ اتصالی در زبانهٔ آرشیو دسترسی کامل داشته باشید."
+                        )
                     }
                 }
             }
@@ -1254,6 +1290,242 @@ fun GuideStepItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
             )
+        }
+    }
+}
+
+@Composable
+fun PersianAboutAppCard(
+    currentThemeMode: String,
+    onThemeChange: (String) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .testTag("persian_about_card"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "درباره ما",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "در مورد نرم افزار",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                    
+                    Text(
+                        text = if (isExpanded) "بستن جزئیات ▲" else "مشاهده جزئیات ▼",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
+
+                AnimatedVisibility(visible = isExpanded) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                    ) {
+                        // Choice of App Theme (Dark/Light/System)
+                        Text(
+                            text = "پوسته نرم‌افزار:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .padding(4.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            val themeOptions = listOf(
+                                Triple("light", "روشن ☀️", "light_btn"),
+                                Triple("dark", "تاریک 🌙", "dark_btn"),
+                                Triple("system", "سیستم ⚙️", "system_btn")
+                            )
+                            
+                            themeOptions.forEach { (modeKey, modeTitle, testTagSuffix) ->
+                                val isSelected = currentThemeMode == modeKey
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) MaterialTheme.colorScheme.primary 
+                                            else Color.Transparent
+                                        )
+                                        .clickable { onThemeChange(modeKey) }
+                                        .padding(vertical = 8.dp)
+                                        .testTag("theme_opt_$testTagSuffix"),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = modeTitle,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary 
+                                               else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(bottom = 16.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+                        )
+
+                        // Designer and Developer Info
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "طراح و مجری:",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "حمید نعمت‌الهی (Hamid Nematollahi)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Feedback Info
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "نظرات و پیشنهادات:",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "اگر نظر و پیشنهادی دارید به ایمیل زیر بفرستید:",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    lineHeight = 20.sp
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                
+                                // Clickable email row
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                        .clickable {
+                                            try {
+                                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                                    data = Uri.parse("mailto:")
+                                                    putExtra(Intent.EXTRA_EMAIL, arrayOf("hnamatollahi@gmail.com"))
+                                                    putExtra(Intent.EXTRA_SUBJECT, "Feedback for Persian PDF Translator")
+                                                }
+                                                context.startActivity(Intent.createChooser(intent, "ارسال ایمیل با"))
+                                            } catch (e: Exception) {
+                                                // Fallback if no email client
+                                            }
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "hnamatollahi@gmail.com",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.testTag("feedback_email")
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Send,
+                                        contentDescription = "ارسال",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
