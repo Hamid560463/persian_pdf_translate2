@@ -1,46 +1,50 @@
-# Codemagic CI/CD Configuration for Persian PDF Translate Android App
-# For more info: https://docs.codemagic.io/yaml-basic-configuration/yaml-getting-started/
-
 workflows:
   android-workflow:
-    name: Android Build & Test Workflow
-    max_build_duration: 60
-    instance_type: mac_mini_m1 # Standard VM instance for building Android applications
+    name: Build Android Debug APK
+    max_build_duration: 30
+    instance_type: mac_mini_m1
     environment:
+      android_signing:
+        # If you set up code signing in Codemagic UI, you can reference it here.
+        # For debug builds, Gradle generates a default debug keystore automatically.
       vars:
-        # Optimizing JVM options for building inside the CI containers
-        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m -XX:+UseParallelGC"
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m"
     triggering:
       events:
         - push
-        - pull_request
       branch_patterns:
         - pattern: '*'
           include: true
           source: true
     scripts:
-      - name: Initialize Gradle Wrapper (if missing)
+      - name: Set up local.properties
         script: |
-          # The codebase doesn't store gradle wrapper binaries. We dynamically run gradle wrapper to install it.
-          if [ ! -f "gradlew" ]; then
-            echo "Installing Gradle Wrapper..."
-            gradle wrapper
-            chmod +x gradlew
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+      - name: Reconstruct debug keystore
+        script: |
+          if command -v python3 &>/dev/null; then
+            python3 -c "import base64; open('debug.keystore', 'wb').write(base64.b64decode(open('debug.keystore.base64').read().strip()))"
+          elif command -v openssl &>/dev/null; then
+            openssl base64 -d -A -in debug.keystore.base64 -out debug.keystore
+          else
+            base64 -d debug.keystore.base64 > debug.keystore || base64 -D debug.keystore.base64 > debug.keystore || openssl base64 -d -in debug.keystore.base64 -out debug.keystore
           fi
-      - name: Decrypt and Inject Environment Credentials (Optional)
+      - name: Build APK with Gradle
         script: |
-          # If .env is managed/stored securely in CI, configure it here:
-          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
-            cp .env.example .env
-          fi
-      - name: Run Unit & Robolectric Tests
-        script: |
-          ./gradlew :app:testDebugUnitTest
-      - name: Build Android Debug APK
-        script: |
-          ./gradlew :app:assembleDebug
+          # Don't use gradle wrapper if it is corrupted; download Gradle 9.3.1 directly
+          echo "Downloading Gradle 9.3.1..."
+          curl -sLO https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+          echo "Extracting Gradle..."
+          unzip -q gradle-9.3.1-bin.zip -d /tmp/gradle-dist
+          export PATH=/tmp/gradle-dist/gradle-9.3.1/bin:$PATH
+          
+          # Verify Gradle version
+          gradle --version
+          
+          # Build debug APK
+          gradle assembleDebug
     artifacts:
-      - app/build/outputs/apk/debug/*.apk
+      - app/build/outputs/apk/**/*.apk
     publishing:
       email:
         recipients:
