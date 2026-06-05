@@ -373,6 +373,9 @@ fun TextTranslatorScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        PersianTranslationGuide()
     }
 }
 
@@ -572,6 +575,9 @@ fun PdfDashboardScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        PersianTranslationGuide()
     }
 }
 
@@ -1116,3 +1122,138 @@ fun SandColor() = if (MaterialTheme.colorScheme.background.red < 0.3f) Color(0xF
 
 @Composable
 fun CharcoalColor() = if (MaterialTheme.colorScheme.background.red < 0.3f) Color(0xFFE2E2E6) else Color(0xFF191C20)
+
+@Composable
+fun PersianTranslationGuide() {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .testTag("persian_guide_card"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "راهنما",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "راهنمای کامل استفاده از مترجم هوشمند",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    
+                    Text(
+                        text = if (isExpanded) "بستن راهنما ▲" else "مشاهده راهنما ▼",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
+
+                AnimatedVisibility(visible = isExpanded) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                    ) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(bottom = 16.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+                        )
+
+                        GuideStepItem(
+                            icon = Icons.Default.Edit,
+                            title = "۱. ترجمه مستقیم متون و مقالات انگلیسی",
+                            description = "متون مورد نظر خود را کپی کرده و در بخش 'مترجم متن' قرار دهید. با فشردن دکمه ترجمه، متون توسط موتور هوش مصنوعی جمینی به فارسی روان ترجمه شده و همچنین قابلیت ارسال، کپی سریع یا خروجی PDF جدید را داراست."
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        GuideStepItem(
+                            icon = Icons.Default.Menu,
+                            title = "۲. کتابخوان و مفسر پیشرفته فایل‌های PDF",
+                            description = "فایل‌های کتاب یا اسناد PDF انگلیسی خود را بدون محدودیت از پوشه دانلودها یا حافظه دستگاه باز کنید. کتابخوان دو پنله به صورت هوشمند متن انگلیسی را استخراج کرده و ترجمه فارسی آن را در کنار هر صفحه به شکلی کاملاً جذاب و همزمان نمایش می‌دهد."
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        GuideStepItem(
+                            icon = Icons.Default.List,
+                            title = "۳. تاریخچه اتوماتیک آفلاین و مدیریت آرشیو",
+                            description = "تمام ترجمه‌های گرانبهای شما به محض اتمام به طور خودکار در آرشیو محلی تلفن همراه شما ثبت می‌شوند تا در مراجعات بعدی کاملاً رایگان، بدون اینترنت و به صورت سریع از بخش آرشیو در دسترس باشند."
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GuideStepItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
