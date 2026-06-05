@@ -1,0 +1,6 @@
+{
+  "name": "Persian PDF Translate",
+  "description": "Translate English PDFs and texts into beautiful, fluent Persian using Google Gemini AI, with elegant Persian PDF export and reading features.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
