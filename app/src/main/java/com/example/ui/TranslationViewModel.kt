@@ -99,6 +99,24 @@ class TranslationViewModel(application: Application) : AndroidViewModel(applicat
         textToSpeech?.stop()
     }
 
+    fun getCustomApiKey(): String {
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        return prefs.getString("gemini_user_api_key", "") ?: ""
+    }
+
+    fun saveCustomApiKey(key: String) {
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        prefs.edit().putString("gemini_user_api_key", key.trim()).apply()
+    }
+
+    fun getEffectiveApiKey(): String {
+        val savedKey = getCustomApiKey()
+        if (savedKey.isNotEmpty()) {
+            return savedKey
+        }
+        return BuildConfig.GEMINI_API_KEY
+    }
+
     // Direct Text Translation
     fun translateText(historyViewModel: HistoryViewModel) {
         val query = inputText.value.trim()
@@ -110,9 +128,9 @@ class TranslationViewModel(application: Application) : AndroidViewModel(applicat
         _uiState.value = UiState.Loading
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
+                val apiKey = getEffectiveApiKey()
                 if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _uiState.value = UiState.Error("Gemini API key is not configured in Secrets panel.")
+                    _uiState.value = UiState.Error("Gemini API key is not configured. Please open Secrets Panel (تنظیم کلید خصوصی) in the app to configure your own API Key.")
                     return@launch
                 }
 
@@ -231,9 +249,9 @@ class TranslationViewModel(application: Application) : AndroidViewModel(applicat
         _pdfTranslationState.value = UiState.Loading
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
+                val apiKey = getEffectiveApiKey()
                 if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-                    _pdfTranslationState.value = UiState.Error("Gemini API key is not configured in Secrets panel.")
+                    _pdfTranslationState.value = UiState.Error("Gemini API key is not configured. Please open Secrets Panel (تنظیم کلید خصوصی) in the app to configure your own API Key.")
                     return@launch
                 }
 

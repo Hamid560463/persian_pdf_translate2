@@ -52,8 +52,16 @@ fun MainLayout(
 ) {
     var activeTab by remember { mutableStateOf(0) }
     var showReaderView by remember { mutableStateOf(false) }
+    var showSecretsDialog by remember { mutableStateOf(false) }
 
     val pdfUriState by translationViewModel.pdfUri.collectAsState()
+
+    if (showSecretsDialog) {
+        SecretsPanelDialog(
+            onDismiss = { showSecretsDialog = false },
+            viewModel = translationViewModel
+        )
+    }
 
     // Immersive Main Screen
     Surface(
@@ -65,7 +73,8 @@ fun MainLayout(
             PdfReaderScreen(
                 viewModel = translationViewModel,
                 historyViewModel = historyViewModel,
-                onClose = { showReaderView = false }
+                onClose = { showReaderView = false },
+                onOpenSecrets = { showSecretsDialog = true }
             )
         } else {
             Scaffold(
@@ -109,13 +118,15 @@ fun MainLayout(
                             viewModel = translationViewModel,
                             historyViewModel = historyViewModel,
                             currentThemeMode = currentThemeMode,
-                            onThemeChange = onThemeChange
+                            onThemeChange = onThemeChange,
+                            onOpenSecrets = { showSecretsDialog = true }
                         )
                         1 -> PdfDashboardScreen(
                             viewModel = translationViewModel,
                             onOpenReader = { showReaderView = true },
                             currentThemeMode = currentThemeMode,
-                            onThemeChange = onThemeChange
+                            onThemeChange = onThemeChange,
+                            onOpenSecrets = { showSecretsDialog = true }
                         )
                         2 -> HistoryScreen(historyViewModel, translationViewModel)
                     }
@@ -130,7 +141,8 @@ fun TextTranslatorScreen(
     viewModel: TranslationViewModel,
     historyViewModel: HistoryViewModel,
     currentThemeMode: String,
-    onThemeChange: (String) -> Unit
+    onThemeChange: (String) -> Unit,
+    onOpenSecrets: () -> Unit
 ) {
     val context = LocalContext.current
     val inputText by viewModel.inputText.collectAsState()
@@ -178,6 +190,50 @@ fun TextTranslatorScreen(
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // API Key (Secrets Panel) setup row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val keyConfigured = viewModel.getCustomApiKey().isNotEmpty()
+            
+            // Status Indicator
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (keyConfigured) Icons.Default.CheckCircle else Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = if (keyConfigured) Color(0xFF4CAF50) else Color(0xFFFF9800),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (keyConfigured) "کلید اختصاصی فعال است" else "استفاده از کلید اشتراکی پیش‌فرض",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (keyConfigured) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                )
+            }
+
+            // Trigger Button
+            Button(
+                onClick = onOpenSecrets,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.height(36.dp)
+            ) {
+                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Secrets Panel (کلید API)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -271,12 +327,27 @@ fun TextTranslatorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFFBEBEB))
                 ) {
-                    Text(
-                        text = "Error: ${state.message}",
-                        color = Color.Red,
-                        modifier = Modifier.padding(16.dp),
-                        fontWeight = FontWeight.Medium
-                    )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Error: ${state.message}",
+                            color = Color.Red,
+                            fontWeight = FontWeight.Medium
+                        )
+                        if (state.message.contains("API key", ignoreCase = true)) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = onOpenSecrets,
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.align(Alignment.End),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("تنظیم کلید (Secrets Panel)", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
             else -> {}
@@ -400,7 +471,8 @@ fun PdfDashboardScreen(
     viewModel: TranslationViewModel,
     onOpenReader: () -> Unit,
     currentThemeMode: String,
-    onThemeChange: (String) -> Unit
+    onThemeChange: (String) -> Unit,
+    onOpenSecrets: () -> Unit
 ) {
     val context = LocalContext.current
     val pdfUriState by viewModel.pdfUri.collectAsState()
@@ -450,7 +522,51 @@ fun PdfDashboardScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // API Key (Secrets Panel) setup row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val keyConfigured = viewModel.getCustomApiKey().isNotEmpty()
+            
+            // Status Indicator
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (keyConfigured) Icons.Default.CheckCircle else Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = if (keyConfigured) Color(0xFF4CAF50) else Color(0xFFFF9800),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (keyConfigured) "کلید اختصاصی فعال است" else "استفاده از کلید اشتراکی پیش‌فرض",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (keyConfigured) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                )
+            }
+
+            // Trigger Button
+            Button(
+                onClick = onOpenSecrets,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.height(36.dp)
+            ) {
+                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Secrets Panel (کلید API)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         if (pdfUriState == null) {
             // Empty Upload State
@@ -605,7 +721,8 @@ fun PdfDashboardScreen(
 fun PdfReaderScreen(
     viewModel: TranslationViewModel,
     historyViewModel: HistoryViewModel,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onOpenSecrets: () -> Unit
 ) {
     val context = LocalContext.current
     val currentPageIndex by viewModel.currentPageIndex.collectAsState()
@@ -637,8 +754,13 @@ fun PdfReaderScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onClose) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                        }
+                        IconButton(onClick = onOpenSecrets) {
+                            Icon(Icons.Default.Lock, contentDescription = "Secrets Panel", tint = Color.White)
+                        }
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -856,11 +978,31 @@ fun PdfReaderScreen(
                                     modifier = Modifier.padding(12.dp)
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Button(
-                                    onClick = { viewModel.translateCurrentPdfPage(historyViewModel) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Retry Translation")
+                                    Button(
+                                        onClick = { viewModel.translateCurrentPdfPage(historyViewModel) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                    ) {
+                                        Text("Retry Translation")
+                                    }
+                                    val errMessage = (pdfTranslationState as UiState.Error).message
+                                    if (errMessage.contains("API key", ignoreCase = true)) {
+                                        Button(
+                                            onClick = onOpenSecrets,
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.secondary,
+                                                contentColor = MaterialTheme.colorScheme.secondaryContainer
+                                            ),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("تنظیم کلید API", color = MaterialTheme.colorScheme.onSecondaryContainer, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
                                 }
                             }
                             else -> {
@@ -1523,6 +1665,171 @@ fun PersianAboutAppCard(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SecretsPanelDialog(
+    onDismiss: () -> Unit,
+    viewModel: TranslationViewModel
+) {
+    var apiKeyInput by remember { mutableStateOf(viewModel.getCustomApiKey()) }
+    val context = LocalContext.current
+    val currentSaved = viewModel.getCustomApiKey()
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .testTag("secrets_dialog"),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                    Text(
+                        text = "Secrets Panel (تنظیم کلید خصوصی)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Text(
+                            text = "با قرار دادن کلید اختصاصی Gemini API خود، می‌توانید بدون هیچ محدودیتی از تمامی قابلیت‌های ترجمهٔ متون و فایل‌های PDF استفاده کنید.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 22.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "وضعیت فعلی:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (currentSaved.isNotEmpty()) Icons.Default.CheckCircle else Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = if (currentSaved.isNotEmpty()) Color(0xFF4CAF50) else Color(0xFFFF9800),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (currentSaved.isNotEmpty()) "کلید اختصاصی شما فعال است" else "استفاده از کلید اشتراکی پیش‌فرض",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (currentSaved.isNotEmpty()) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "کلید API خود را وارد کنید (Gemini API Key):",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = apiKeyInput,
+                    onValueChange = { apiKeyInput = it },
+                    placeholder = { Text("AIzaSy...") },
+                    modifier = Modifier.fillMaxWidth().testTag("api_key_field"),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.saveCustomApiKey(apiKeyInput)
+                            Toast.makeText(context, "کلید با موفقیت ذخیره شد!", Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("ذخیره کلید", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+
+                    if (currentSaved.isNotEmpty()) {
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.saveCustomApiKey("")
+                                apiKeyInput = ""
+                                Toast.makeText(context, "کلید اختصاصی حذف شد.", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                        ) {
+                            Text("حذف کلید")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Guide on how to get API key in English and Persian
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "How to get a free Gemini API Key?",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Go to Google AI Studio (aistudio.google.com) and click 'Get API Key'. It is completely free!",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 16.sp
+                        )
                     }
                 }
             }

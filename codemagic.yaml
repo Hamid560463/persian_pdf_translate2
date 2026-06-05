@@ -29,8 +29,11 @@ workflows:
           fi
       - name: Decrypt and Inject Environment Credentials (Optional)
         script: |
-          # If .env is managed/stored securely in CI, configure it here:
-          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+          # If GEMINI_API_KEY environment variable is defined in Codemagic dashboard, inject it securely:
+          if [ -n "$GEMINI_API_KEY" ]; then
+            echo "Injecting GEMINI_API_KEY from Codemagic environment variables..."
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
+          elif [ ! -f ".env" ] && [ -f ".env.example" ]; then
             cp .env.example .env
           fi
       - name: Run Unit & Robolectric Tests
