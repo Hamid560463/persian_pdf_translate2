@@ -45,5 +45,3 @@ workflows:
       email:
         recipients:
           - hnamatollahi@gmail.com
-        on_failure: true
-        on_success: true
